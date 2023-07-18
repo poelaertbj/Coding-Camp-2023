@@ -9,20 +9,20 @@ class DataPoint {
   modeltype?: string;
   nchs_or_count_flag?: string;
 published_date?: string;
-share?: number;
+share=0;
 share_hi?: number;
 share_lo?: number;
 time_interval?: string;
 usa_or_hhsregion?: string;
 variant?: string;
- week_ending?: number;
+ week_ending=0;
  displayWeek?: string;
 
  constructor (obj: any) {
    this.share = +obj.share;
    this.variant = obj.variant;
    this.week_ending = Date.parse(<string>obj.week_ending)
-   this.displayWeek = obj.week_ending.split(' ')[0]
+   this.displayWeek = obj.week_ending.split('T')[0].trim()
  }
 }
 
@@ -116,9 +116,11 @@ export class AppComponent implements OnInit{
 
    // this.http.get('/assets/data.csv', {responseType: 'text'}).subscribe(res =>{
      //this.data =d3.csvParse(res).map(d => new DataPoint(d))
-    this.http.get(' https://data.cdc.gov/resource/jr58-6ysp.json').subscribe((res: any) =>{
+    this.http.get('https://data.cdc.gov/resource/jr58-6ysp.json').subscribe((res: any) =>{
       this.data = res.map(d => new DataPoint(d))
-      console.log(this.data)
+        .sort((a,b)=>a.share-b.share)
+        .sort((a,b)=>a.week_ending-b.week_ending)
+     // console.log(this.data)
       this.series = d3.stack()
         .keys(this.colors.keys())
         //@ts-ignore
@@ -126,12 +128,12 @@ export class AppComponent implements OnInit{
           if (group.has(key)){
             return group.get(key).share
           } else {
-            return new DataPoint({})
+            return 0
           }
         })
         .order(d3.stackOrderReverse)
         //@ts-ignore
-        (d3.rollup(this.data, ([d]) => d, d => d.week_ending, d => d.variant).values())
+        (d3.rollup(this.data, ([d]) => d, d => d.displayWeek, d => d.variant).values())
         //@ts-ignore
         .map(s =>  (s.forEach(d => {
           //@ts-ignore
@@ -150,25 +152,25 @@ export class AppComponent implements OnInit{
         .attr("transform", `translate(0,${this.height - this.margin.bottom})`)
         .call(d3.axisBottom(x)
           //@ts-ignore
-          .tickValues(d3.ticks(...d3.extent(x.domain()), this.width / 80))
+          .tickValues(x.domain().filter(function(d,i){ return !(i%2)})))
           //@ts-ignore
-          .tickSizeOuter(0))
+         // .tickSizeOuter(0))
 
       this.yAxis = g => g
         .attr("transform", `translate(${this.margin.left},0)`)
         .call(d3.axisLeft(y)
           //@ts-ignore
-          .tickFormat(x => (x / 1e9).toFixed(0)))
+          .tickFormat(x => (x *100).toFixed(0)))
         .call(g => g.select(".domain").remove())
         .call(g => g.select(".tick:last-of-type text").clone()
           .attr("x", 3)
           .attr("text-anchor", "start")
           .attr("font-weight", "bold")
-          .text("Share"))
+          .text("Share%"))
 console.log ([... new Set (this.data.map(d => d.week_ending))])
       const x = d3.scaleBand()
         //@ts-ignore
-        .domain([... new Set (this.data.map(d => d.week_ending))])
+        .domain(this.data.map(d => d.displayWeek))
         //.rangeRound([0,1000])
         .range([this.margin.left, this.width - this.margin.right])
 
@@ -198,7 +200,7 @@ console.log ([... new Set (this.data.map(d => d.week_ending))])
           .data(d => d.filter(d => d.data))
           .join("rect")
           .attr("x", (d) => {
-            return x(d.data.week_ending)})
+            return x(d.data.displayWeek)})
           .attr("y", d => y(d[1]))
           .attr("width", x.bandwidth() - 1)
           .attr("height", d => y(d[0]) - y(d[1]))
