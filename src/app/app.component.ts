@@ -4,27 +4,9 @@ import { Component, ElementRef, OnInit, ViewChild } from '@angular/core';
 
 //import {swatches} from "@d3/color-legend"
 import * as d3 from 'd3';
+import {DataPoint} from "../models/data-point";
+import {VariantServiceService} from "../services/variant-service.service";
 
-class DataPoint {
-  modeltype?: string;
-  nchs_or_count_flag?: string;
-published_date?: string;
-share=0;
-share_hi?: number;
-share_lo?: number;
-time_interval?: string;
-usa_or_hhsregion?: string;
-variant?: string;
- week_ending=0;
- displayWeek?: string;
-
- constructor (obj: any) {
-   this.share = +obj.share;
-   this.variant = obj.variant;
-   this.week_ending = Date.parse(<string>obj.week_ending)
-   this.displayWeek = obj.week_ending.split('T')[0].trim()
- }
-}
 
 @Component({
   selector: 'app-root',
@@ -105,18 +87,26 @@ export class AppComponent implements OnInit{
   series: any;
   xAxis: any;
   yAxis: any;
+  keys: any;
 
 
   constructor(
-
+private variantService: VariantServiceService,
     private http: HttpClient
-  ){}
+  ){
+   this.variantService.fetchUrlData()
+
+  }
   ngOnInit(){
     console.log(this)
-
+    //this.variantService.data.subscribe(res=>this.data=res)
+this.data = this.variantService.fetchData()
+    this.series = this.variantService.fetchSeries()
+    this.keys = this.variantService.fetchKeys()
+    console.log(this)
    // this.http.get('/assets/data.csv', {responseType: 'text'}).subscribe(res =>{
      //this.data =d3.csvParse(res).map(d => new DataPoint(d))
-    this.http.get('https://data.cdc.gov/resource/jr58-6ysp.json').subscribe((res: any) =>{
+   /* this.http.get('https://data.cdc.gov/resource/jr58-6ysp.json').subscribe((res: any) =>{
       this.data = res.map(d => new DataPoint(d))
         .sort((a,b)=>a.share-b.share)
         .sort((a,b)=>a.week_ending-b.week_ending)
@@ -144,7 +134,7 @@ export class AppComponent implements OnInit{
             console.log(d)
           }
           return d.data
-        }), s))
+        }), s))*/
 
       console.log(this.series);
 
@@ -167,7 +157,6 @@ export class AppComponent implements OnInit{
           .attr("text-anchor", "start")
           .attr("font-weight", "bold")
           .text("Share%"))
-console.log ([... new Set (this.data.map(d => d.week_ending))])
       const x = d3.scaleBand()
         //@ts-ignore
         .domain(this.data.map(d => d.displayWeek))
@@ -195,7 +184,7 @@ console.log ([... new Set (this.data.map(d => d.week_ending))])
         .selectAll("g")
         .data(this.series)
         .join("g")
-        .attr("fill", ({key}) => color(key))
+        .attr("fill", ({key}) => "black")//color(key))
         .call(g => g.selectAll("rect")
           .data(d => d.filter(d => d.data))
           .join("rect")
@@ -215,7 +204,7 @@ console.log ([... new Set (this.data.map(d => d.week_ending))])
         .call(this.yAxis);
 
       return this.svg.node();
-    })
+    //})
   }
 
 }

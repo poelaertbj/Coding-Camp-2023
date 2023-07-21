@@ -3,10 +3,12 @@ import { NgModule } from '@angular/core';
 import { BrowserModule } from '@angular/platform-browser';
 
 import { AppComponent } from './app.component';
+import { CirculatingVariantsComponent } from './circulating-variants/circulating-variants.component';
 
 @NgModule({
   declarations: [
-    AppComponent
+    AppComponent,
+    CirculatingVariantsComponent
   ],
   imports: [
     BrowserModule,
