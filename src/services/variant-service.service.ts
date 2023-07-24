@@ -8,48 +8,41 @@ import {BehaviorSubject} from "rxjs";
   providedIn: 'root'
 })
 export class VariantServiceService {
-  private _data: BehaviorSubject<DataPoint[]>= new BehaviorSubject<DataPoint[]>([]);
-  public get data(){
-    return this._data.value;
-  }
-  public set data(value :any){
-    console.log(value)
-    this._data.next (value)
-  }
-  series: any =[];
+  data: BehaviorSubject<DataPoint[]>= new BehaviorSubject<DataPoint[]>([]);
+  series: BehaviorSubject<any>= new BehaviorSubject<any>([]);
   keys: string[]=[];
 
   constructor(private http: HttpClient) { }
   fetchUrlData(){
     this.http.get('https://data.cdc.gov/resource/jr58-6ysp.json').subscribe((res: any) =>{
-      this.parseData(res)
+      const data =this.parseData(res)
+      console.log(data)
+      this.parseSeries(data)
     })
 
 
   }
   fetchFileData(){
-      this.http.get('/assets/data.csv', {responseType: 'text'}).subscribe(res =>{
-      this.parseData(d3.csvParse(res))})
+      this.http.get('/assets/data.csv', {responseType: 'text'}).subscribe(res => {
+        this.parseSeries(this.parseData(d3.csvParse(res)))
+      })
 
   }
 
-  fetchSeries(){
-    return this.series
-  }
-  fetchData(){
-    return this._data.value
-  }
-  fetchKeys(){
-    return this.keys
-  }
-parseData(res:any){
-  const tempData :DataPoint[] = res.map(d => new DataPoint(d))
-    .sort((a,b)=>a.share-b.share)
-    .sort((a,b)=>a.week_ending-b.week_ending)
-  this.keys =[...new Set(tempData.map(p=>p.variant))]
 
+parseData(res:any) {
+  const tempData: DataPoint[] = res.map(d => new DataPoint(d))
+    .sort((a, b) => a.share - b.share)
+    .sort((a, b) => a.week_ending - b.week_ending)
+  this.keys = [...new Set(tempData.map(p => p.variant))]
+  this.data.next(tempData)
+  return tempData
+}
+
+parseSeries(data:DataPoint[]){
+    console.log(data)
   // console.log(this.data)
-  this.series = d3.stack()
+  const series = d3.stack()
     .keys(this.keys)
     //@ts-ignore
     .value((group: any, key: any) => {
@@ -61,12 +54,13 @@ parseData(res:any){
     })
     .order(d3.stackOrderReverse)
     //@ts-ignore
-    (d3.rollup(this.data, ([d]) => d, d => d.displayWeek, d => d.variant).values())
+    (d3.rollup(data, ([d]) => d, d => d.displayWeek, d => d.variant).values())
     //@ts-ignore
     .map(s =>  (s.forEach(d => {
       //@ts-ignore
       d.data = d.data.get(s.key)
       return d.data
     }), s))
+  this.series.next(series)
 }
 }

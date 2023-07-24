@@ -1,6 +1,6 @@
 import { HttpClient } from '@angular/common/http';
 
-import { Component, ElementRef, OnInit, ViewChild } from '@angular/core';
+import {AfterViewInit, Component, ElementRef, OnInit, ViewChild} from '@angular/core';
 
 //import {swatches} from "@d3/color-legend"
 import * as d3 from 'd3';
@@ -13,7 +13,7 @@ import {VariantServiceService} from "../services/variant-service.service";
   templateUrl: './app.component.html',
   styleUrls: ['./app.component.scss']
 })
-export class AppComponent implements OnInit{
+export class AppComponent implements AfterViewInit{
   @ViewChild('cureLine', {read: ElementRef}) chartContainer!: ElementRef;
   colors: Map<string, string> = new Map<string, string>([
     ["A.2.5", "#2A5784"],
@@ -97,47 +97,18 @@ private variantService: VariantServiceService,
    this.variantService.fetchUrlData()
 
   }
-  ngOnInit(){
+  ngAfterViewInit() {
     console.log(this)
-    //this.variantService.data.subscribe(res=>this.data=res)
-this.data = this.variantService.fetchData()
-    this.series = this.variantService.fetchSeries()
-    this.keys = this.variantService.fetchKeys()
+    this.variantService.data.subscribe(res => this.data = res)
+    this.variantService.series.subscribe(res =>{
+      this.series = res
+      this.drawChart()
+    })
     console.log(this)
-   // this.http.get('/assets/data.csv', {responseType: 'text'}).subscribe(res =>{
-     //this.data =d3.csvParse(res).map(d => new DataPoint(d))
-   /* this.http.get('https://data.cdc.gov/resource/jr58-6ysp.json').subscribe((res: any) =>{
-      this.data = res.map(d => new DataPoint(d))
-        .sort((a,b)=>a.share-b.share)
-        .sort((a,b)=>a.week_ending-b.week_ending)
-     // console.log(this.data)
-      this.series = d3.stack()
-        .keys(this.colors.keys())
-        //@ts-ignore
-        .value((group: any, key: any) => {
-          if (group.has(key)){
-            return group.get(key).share
-          } else {
-            return 0
-          }
-        })
-        .order(d3.stackOrderReverse)
-        //@ts-ignore
-        (d3.rollup(this.data, ([d]) => d, d => d.displayWeek, d => d.variant).values())
-        //@ts-ignore
-        .map(s =>  (s.forEach(d => {
-          //@ts-ignore
-          console.log(d.data.get(s.key));
-          //@ts-ignore
-          d.data = d.data.get(s.key)
-          if(!d.data) {
-            console.log(d)
-          }
-          return d.data
-        }), s))*/
 
-      console.log(this.series);
-
+    console.log(this.series);
+  }
+drawChart(){
       this.xAxis = g => g
         .attr("transform", `translate(0,${this.height - this.margin.bottom})`)
         .call(d3.axisBottom(x)
@@ -184,7 +155,7 @@ this.data = this.variantService.fetchData()
         .selectAll("g")
         .data(this.series)
         .join("g")
-        .attr("fill", ({key}) => "black")//color(key))
+        .attr("fill", ({key}) => color(key))//color(key))
         .call(g => g.selectAll("rect")
           .data(d => d.filter(d => d.data))
           .join("rect")
