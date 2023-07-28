@@ -31,7 +31,8 @@ export class VariantServiceService {
 
 
 parseData(res:any) {
-  const tempData: DataPoint[] = res.map(d => new DataPoint(d))
+    const d= this.cleanData(res)
+  const tempData: DataPoint[] = d.map(d => new DataPoint(d))
     .sort((a, b) => a.share - b.share)
     .sort((a, b) => a.week_ending - b.week_ending)
   this.keys = [...new Set(tempData.map(p => p.variant))]
@@ -62,5 +63,38 @@ parseSeries(data:DataPoint[]){
       return d.data
     }), s))
   this.series.next(series)
+}
+cleanData(data): any[]{
+    const variantMap: Map <string, any>= new Map<string, any>()
+    console.log(data)
+    let ret= [];
+    const filtered= data.filter(d=> d.usa_or_hhsregion==='USA' && d.time_interval==='biweekly').sort((a,b)=> a.published_date.localeCompare(b.published_date));
+    console.log(filtered)
+  filtered.forEach(p=> {
+    if(variantMap.has(p.variant)){
+      let points=variantMap.get(p.variant)
+      if(points){
+       // if(points.has(p.week_ending)){
+          points.set(p.week_ending,p)
+      //  }
+      }else{
+        console.log("ldkjfa;")
+      }
+    }else{
+      const tempMap=new Map()
+      tempMap.set(p.week_ending,p)
+      variantMap.set(p.variant, tempMap)
+    }
+  })
+  console.log(variantMap)
+  const t= [...variantMap.values()]
+t.forEach(m =>{
+  ret.push(...m.values())
+  })
+  console.log(ret)
+
+    return ret;
+
+
 }
 }

@@ -15,6 +15,6 @@ export class DataPoint {
     this.share = +obj.share;
     this.variant = obj.variant;
     this.week_ending = Date.parse(<string>obj.week_ending)
-    this.displayWeek = obj.week_ending.split('T')[0].trim()
+    this.displayWeek = obj.week_ending.split('T')[0].trim().split(' ')[0]
   }
 }

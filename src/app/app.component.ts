@@ -75,11 +75,65 @@ export class AppComponent implements AfterViewInit{
     ["XBB.1.9.2", "#9D7760"],
     ["XBB.2.3", "#F1CF63"]
   ])
-
+  colors2 =[
+    "#000080",
+    "#0000cd",
+    "#0000ff",
+    "#006400",
+    "#00ff00",
+    "#00ff7f",
+    "#00ffff",
+    "#191970",
+    "#20b2aa",
+    "#2e8b57",
+    "#2f4f4f",
+    "#32cd32",
+    "#4682b4",
+    "#556b2f",
+    "#6495ed",
+    "#663399",
+    "#778899",
+    "#808000",
+    "#87cefa",
+    "#8b0000",
+    "#8b008b",
+    "#7fffd4",
+    "#8fbc8f",
+    "#9370db",
+    "#98fb98",
+    "#9932cc",
+    "#9acd32",
+    "#a020f0",
+    "#a0522d",
+    "#adff2f",
+    "#afeeee",
+    "#b03060",
+    "#b8860b",
+    "#bc8f8f",
+    "#c71585",
+    "#cd5c5c",
+    "#d2691e",
+    "#d2b48c",
+    "#d3d3d3",
+    "#da70d6",
+    "#db7093",
+    "#dc143c",
+    "#dda0dd",
+    "#e9967a",
+    "#eee8aa",
+    "#f4a460",
+    "#ff00ff",
+    "#ff4500",
+    "#ff6347",
+    "#ff69b4",
+    "#ff8c00",
+    "#ffb6c1",
+    "#ffd700",
+    "#ffff00",]
 
   height = 500
 
-  margin = ({top: 20, right: 30, bottom: 30, left: 30})
+  margin = ({top: 20, right: 30, bottom: 300, left: 30})
   width = 1000
 
   svg: any;
@@ -88,18 +142,25 @@ export class AppComponent implements AfterViewInit{
   xAxis: any;
   yAxis: any;
   keys: any;
+  weekData: DataPoint[];
+
 
 
   constructor(
 private variantService: VariantServiceService,
     private http: HttpClient
   ){
-   this.variantService.fetchUrlData()
+   //this.variantService.fetchUrlData()
+    this.variantService.fetchFileData()
 
   }
   ngAfterViewInit() {
     console.log(this)
-    this.variantService.data.subscribe(res => this.data = res)
+    this.variantService.data.subscribe(res => {
+      this.keys= [...new Set(res.map(p=>p.variant))]
+      this.data = res
+    })
+
     this.variantService.series.subscribe(res =>{
       this.series = res
       this.drawChart()
@@ -114,6 +175,7 @@ drawChart(){
         .call(d3.axisBottom(x)
           //@ts-ignore
           .tickValues(x.domain().filter(function(d,i){ return !(i%2)})))
+        //.tickValues(x.domain()))
           //@ts-ignore
          // .tickSizeOuter(0))
 
@@ -155,7 +217,7 @@ drawChart(){
         .selectAll("g")
         .data(this.series)
         .join("g")
-        .attr("fill", ({key}) => color(key))//color(key))
+        .attr("fill", ({key}) => this.colors2[this.keys.indexOf(key)])//color(key))
         .call(g => g.selectAll("rect")
           .data(d => d.filter(d => d.data))
           .join("rect")
@@ -165,11 +227,18 @@ drawChart(){
           .attr("width", x.bandwidth() - 1)
           .attr("height", d => y(d[0]) - y(d[1]))
           .append("title")
-          .text(d =>  `Variant: ${d.data.variant}, Share: ${d.data.share*100}%`));
+          .text(d =>  `Variant: ${d.data.variant}, Share: ${d.data.share*100}%`))
+      //.on("click", this.clicked);
 
+this.svg.selectAll("rect") .on("click", (event,d)=>this.clicked(event, d));
 
       this.svg.append("g")
-        .call(this.xAxis);
+        .call(this.xAxis)
+        .selectAll("text")
+        .style("text-anchor", "end")
+        .attr("dx", "-.8em")
+        .attr("dy", ".15em")
+        .attr("transform", "rotate(-65)");
 
       this.svg.append("g")
         .call(this.yAxis);
@@ -177,6 +246,18 @@ drawChart(){
       return this.svg.node();
     //})
   }
+clicked(event, d){
+console.log(event)
+  console.log(d)
+  console.log(this)
+  this.getWeekData(d.data)
+}
+getWeekData(data: DataPoint){
+    const week= data.displayWeek
+  this.weekData =this.data.filter(p=>p.displayWeek===week)
+
+
+}
 
 }
 
